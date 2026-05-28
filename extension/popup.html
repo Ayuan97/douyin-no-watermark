@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>抖音无水印下载</title>
+<style>
+  body {
+    width: 380px;
+    margin: 0;
+    padding: 12px;
+    font: 13px/1.5 -apple-system, "PingFang SC", system-ui, sans-serif;
+    color: #222;
+  }
+  h1 { font-size: 14px; margin: 0 0 8px; }
+  textarea {
+    width: 100%;
+    height: 64px;
+    box-sizing: border-box;
+    font: 12px/1.4 -apple-system, system-ui, sans-serif;
+    padding: 6px;
+    resize: vertical;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  textarea:focus { outline: none; border-color: #1677ff; }
+  .row { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+  button {
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 4px;
+  }
+  button.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:hover:not(:disabled) { filter: brightness(0.95); }
+  .status { color: #888; font-size: 12px; flex: 1; }
+  .error {
+    color: #c00;
+    padding: 6px 8px;
+    background: #fee;
+    border-radius: 4px;
+    margin-top: 8px;
+    display: none;
+    word-break: break-all;
+  }
+  .error.show { display: block; }
+  .result {
+    margin-top: 10px;
+    padding: 8px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    display: none;
+  }
+  .result.show { display: block; }
+  .meta { margin: 4px 0; word-break: break-all; }
+  .meta .label { color: #888; }
+  .cover {
+    display: none;
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+    margin: 6px 0;
+  }
+  .cover.show { display: block; }
+  .url {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    background: #fff;
+    padding: 4px 6px;
+    border-radius: 3px;
+    word-break: break-all;
+    max-height: 60px;
+    overflow-y: auto;
+    border: 1px solid #eee;
+  }
+  .hint { color: #aaa; font-size: 11px; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>抖音无水印下载</h1>
+  <textarea id="input" placeholder="粘贴分享文案或链接,例如:8.94 复制打开抖音 ..."></textarea>
+  <div class="row">
+    <button id="btn-parse" class="primary">解析</button>
+    <span class="status" id="status"></span>
+  </div>
+  <div class="error" id="error"></div>
+  <div class="result" id="result">
+    <div class="meta"><span class="label">作者:</span><span id="author"></span></div>
+    <div class="meta"><span class="label">标题:</span><span id="title"></span></div>
+    <img class="cover" id="cover" alt="封面">
+    <div class="meta"><span class="label">无水印直链:</span></div>
+    <div class="url" id="url"></div>
+    <div class="row">
+      <button id="btn-download" class="primary">下载视频</button>
+      <button id="btn-copy">复制直链</button>
+    </div>
+  </div>
+  <div class="hint">直链有时效,请尽快下载。</div>
+  <script src="popup.js"></script>
+</body>
+</html>

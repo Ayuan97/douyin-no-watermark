@@ -35,6 +35,21 @@ npm run cli -- "8.94 复制打开抖音 ..."
 npm run cli -- "8.94 复制打开抖音 ..." ./out
 ```
 
+## Chrome 扩展
+
+`extension/` 是一个独立的 Chrome MV3 扩展,提供 GUI 用法(粘贴 → 解析 → 浏览器原生下载弹窗)。
+
+加载方式:
+
+1. 打开 `chrome://extensions`,右上角开「开发者模式」
+2. 点「加载已解压的扩展程序」,选择本仓库的 `extension/` 目录
+3. 点工具栏图标 → 弹出 popup → 粘贴分享文案 → 解析 → 下载
+
+实现要点:
+- 解析逻辑(`extension/popup.js`)是浏览器版重写,**不复用**根目录的 Node 库(`node:fs/stream` 用不上;下载交给 `chrome.downloads`)。两边思路一致。
+- 移动 UA + Referer 通过 `declarativeNetRequest` 动态规则注入,`initiatorDomains: [chrome.runtime.id]` 限定**仅对扩展自己发的请求生效**,不影响用户正常浏览。
+- 下载用 `chrome.downloads.download({ saveAs: true })`,Chrome 原生保存对话框,用户自选位置。
+
 ## 工作原理
 
 1. 从分享文案抠出链接(短链/直链皆可),跟随重定向 → 19 位 `aweme_id`。

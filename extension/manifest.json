@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "抖音无水印下载",
+  "version": "0.1.0",
+  "description": "粘贴抖音分享文案/链接 → 一键下载无水印视频到本地。",
+  "permissions": [
+    "downloads",
+    "declarativeNetRequestWithHostAccess"
+  ],
+  "host_permissions": [
+    "*://*.douyin.com/*",
+    "*://*.iesdouyin.com/*",
+    "*://*.amemv.com/*",
+    "*://*.snssdk.com/*",
+    "*://*.douyinvod.com/*",
+    "*://*.douyinpic.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "抖音无水印下载"
+  }
+}
