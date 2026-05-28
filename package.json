@@ -1,0 +1,38 @@
+{
+  "name": "douyin-no-watermark",
+  "version": "0.1.0",
+  "description": "抖音视频分享文案/链接 → 无水印直链 + 流式下载(纯 Node,无 cookie / 无 Python)。",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "cli": "tsx src/cli.ts"
+  },
+  "keywords": [
+    "douyin",
+    "抖音",
+    "无水印",
+    "no-watermark",
+    "aweme"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
