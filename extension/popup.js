@@ -1,5 +1,5 @@
 // 抖音无水印下载 - popup 逻辑
-// 解析:fetch 分享页 → 截 window._ROUTER_DATA → playwm→play 去水印
+// 解析:_ROUTER_DATA item_list → 失败则回退 m.douyin HTML(<video>/playwm) → playwm→play
 // 下载:chrome.downloads.download(saveAs: true) → Chrome 原生保存对话框
 // UA/Referer 由 DNR 动态规则注入,只对扩展自己发的请求生效,绝不影响用户正常浏览。
 
@@ -60,21 +60,79 @@ async function resolveAwemeId(input) {
   throw new Error(`无法解析 aweme_id,最终落点:${r.url}`)
 }
 
+function toNoWatermarkUrl(wmOrId) {
+  const s = (wmOrId || '').trim()
+  if (!s) throw new Error('空的播放地址/video_id')
+  if (/^https?:\/\//i.test(s)) {
+    return s.replace('/aweme/v1/playwm/', '/aweme/v1/play/').replace('/playwm/', '/play/')
+  }
+  return `https://www.iesdouyin.com/aweme/v1/play/?video_id=${encodeURIComponent(s)}&ratio=720p&line=0`
+}
+
+function extractPlayCandidateFromHtml(html) {
+  const videoSrc = html.match(/<video[^>]+src=["']([^"']+)["']/i)?.[1]
+  if (videoSrc && /play|aweme|video/i.test(videoSrc)) return videoSrc
+  const playUrl = html.match(/https?:\/\/[^"'\\\s<>]+\/aweme\/v1\/playwm\/[^"'\\\s<>]*/)?.[0]
+    || html.match(/https?:\/\/[^"'\\\s<>]+\/aweme\/v1\/play\/\?[^"'\\\s<>]*/)?.[0]
+  if (playUrl) return playUrl
+  const vid = html.match(/video_id=([a-zA-Z0-9]+)/)?.[1]
+  if (vid) return vid
+  const list0 = html.match(/"url_list"\s*:\s*\[\s*"(https?:[^"]+play[^"]+)"/)?.[1]
+  if (list0) return list0.replace(/\\u002F/g, '/').replace(/\\\//g, '/')
+  return null
+}
+
 async function resolveMeta(input) {
   const awemeId = await resolveAwemeId(input)
-  const r = await fetch(`https://www.iesdouyin.com/share/video/${awemeId}/`)
-  const html = await r.text()
-  const item = extractRouterData(html)?.loaderData?.['video_(id)/page']?.videoInfoRes?.item_list?.[0]
-  if (!item) throw new Error('item_list 为空(图集/直播/已失效?)')
-  const wm = item.video?.play_addr?.url_list?.[0]
-  if (!wm) throw new Error('play_addr 为空,无可下载直链')
-  return {
-    awemeId: item.aweme_id || awemeId,
-    author: item.author?.nickname || '',
-    title: item.desc || '',
-    cover: item.video?.cover?.url_list?.[0] || '',
-    noWatermarkUrl: wm.replace('/aweme/v1/playwm/', '/aweme/v1/play/')
+  const errors = []
+
+  // 1) 旧路径:_ROUTER_DATA item_list
+  try {
+    const r = await fetch(`https://www.iesdouyin.com/share/video/${awemeId}/`)
+    const html = await r.text()
+    if (/抱歉出错了|请尝试在抖音内观看/.test(html)) throw new Error('分享页被风控/地区限制')
+    const item = extractRouterData(html)?.loaderData?.['video_(id)/page']?.videoInfoRes?.item_list?.[0]
+    if (!item) throw new Error('item_list 为空')
+    const wm = item.video?.play_addr?.url_list?.[0] || item.video?.play_addr?.uri
+    if (!wm) throw new Error('play_addr 为空')
+    return {
+      awemeId: item.aweme_id || awemeId,
+      author: item.author?.nickname || '',
+      title: item.desc || '',
+      cover: item.video?.cover?.url_list?.[0] || '',
+      noWatermarkUrl: toNoWatermarkUrl(wm)
+    }
+  } catch (e) {
+    errors.push(`router_item_list: ${e?.message || e}`)
   }
+
+  // 2) m.douyin / iesdouyin HTML:<video>/playwm/video_id
+  for (const url of [
+    `https://m.douyin.com/share/video/${awemeId}`,
+    `https://www.iesdouyin.com/share/video/${awemeId}/`
+  ]) {
+    try {
+      const r = await fetch(url)
+      const html = await r.text()
+      if (/抱歉出错了|请尝试在抖音内观看/.test(html)) throw new Error('风控/地区限制')
+      const cand = extractPlayCandidateFromHtml(html)
+      if (!cand) throw new Error('HTML 无 video/playwm/video_id')
+      const title = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)/i)?.[1]
+        || html.match(/<title[^>]*>([^<]+)/i)?.[1]?.replace(/\s*-?\s*抖音\s*$/, '').trim()
+        || ''
+      return {
+        awemeId,
+        author: '',
+        title,
+        cover: '',
+        noWatermarkUrl: toNoWatermarkUrl(cand)
+      }
+    } catch (e) {
+      errors.push(`${url}: ${e?.message || e}`)
+    }
+  }
+
+  throw new Error(`解析失败 aweme_id=${awemeId}。${errors.join(' → ')}`)
 }
 
 const safeName = s => (s || '').replace(/[\\/:*?"<>|\n\r\t#]/g, '_').slice(0, 60).trim() || 'video'
